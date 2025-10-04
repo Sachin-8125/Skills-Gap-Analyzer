@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 const AuthForm = ({ isLogin, setView, onAuthSuccess }) => {
   const [email, setEmail] = useState('');
@@ -14,11 +14,11 @@ const AuthForm = ({ isLogin, setView, onAuthSuccess }) => {
     setError('');
     setLoading(true);
 
-    const endpoiint = isLogin ? '/login' : '/signup';
+    const endpoint = isLogin ? '/login' : '/signup';
     const payload = isLogin ? { email, password } : { email, password, name };
 
     try {
-      const response = await fetch(`${VITE_API_BASE_URL}${endpoiint}`, {
+      const response = await fetch(`${VITE_API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

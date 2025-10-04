@@ -111,20 +111,35 @@ app.post('/api/login', async(req, res) => {
 
 //get all skills
 app.get('/api/skills', async(req, res) => {
-    const skills = await prisma.skill.findMany();
-    res.json(skills);
+    try {
+        const skills = await prisma.skill.findMany();
+        res.json(skills);
+    } catch (error) {
+        console.error("Error fetching skills:", error);
+        res.status(500).json({ error: 'Failed to fetch skills' });
+    }
 });
 
 //get user and their skills
 app.get('/api/user/:id', async (req, res) => {
     const { id } = req.params;
-    const user = await prisma.user.findUnique({
-        where: { id },
-        include: {
-            skills: { include: { skill: true } },
-        },
-    });
-    res.json(user);
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id },
+            include: {
+                skills: { include: { skill: true } },
+            },
+        });
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json(user);
+    } catch (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).json({ error: 'Failed to fetch user data' });
+    }
 });
 
 // Add a skill to a user
@@ -147,28 +162,122 @@ app.post('/api/user/:id/skills', async (req, res) => {
 // Analyze skills gap for a user
 app.get('/api/user/:id/analyze', async (req, res) => {
     const { id } = req.params;
-    const analysis = await analyzeSkillsGap(id);
-    res.json(analysis);
+    try {
+        const analysis = await analyzeSkillsGap(id);
+        res.json(analysis);
+    } catch (error) {
+        console.error("Error analyzing skills gap:", error);
+        res.status(500).json({ error: 'Failed to analyze skills gap' });
+    }
 });
 
 
 // Add some dummy data if the database is empty
 const seedDatabase = async () => {
-    const skillsCount = await prisma.skill.count();
-    if (skillsCount > 0) return; // Don't re-seed
+    try {
+        const skillsCount = await prisma.skill.count();
+        if (skillsCount > 0) {
+            console.log('Database already seeded.');
+            return; // Don't re-seed
+        }
 
-    console.log('Seeding database...');
-    // Seed skills
-    await prisma.skill.createMany({
-        data: [
-            { name: 'JavaScript' }, { name: 'React' }, { name: 'Node.js' },
-            { name: 'Python' }, { name: 'SQL' }, { name: 'AWS' },
-            { name: 'Docker' }, { name: 'TypeScript' }, { name: 'Communication' },
-            { name: 'Project Management' },
-        ],
-    });
+        console.log('Seeding database...');
+        
+        // Seed skills
+        const skills = await Promise.all([
+            prisma.skill.create({ data: { name: 'JavaScript' } }),
+            prisma.skill.create({ data: { name: 'React' } }),
+            prisma.skill.create({ data: { name: 'Node.js' } }),
+            prisma.skill.create({ data: { name: 'Python' } }),
+            prisma.skill.create({ data: { name: 'SQL' } }),
+            prisma.skill.create({ data: { name: 'AWS' } }),
+            prisma.skill.create({ data: { name: 'Docker' } }),
+            prisma.skill.create({ data: { name: 'TypeScript' } }),
+            prisma.skill.create({ data: { name: 'Communication' } }),
+            prisma.skill.create({ data: { name: 'Project Management' } }),
+        ]);
 
-    console.log('Database seeded with skills.');
+        console.log('Skills seeded.');
+
+        // Seed job postings with required skills
+        await prisma.jobPosting.create({
+            data: {
+                title: 'Full Stack Developer',
+                description: 'Looking for a full stack developer with modern web technologies',
+                requiredSkills: {
+                    create: [
+                        { skillId: skills[0].id }, // JavaScript
+                        { skillId: skills[1].id }, // React
+                        { skillId: skills[2].id }, // Node.js
+                        { skillId: skills[7].id }, // TypeScript
+                    ]
+                }
+            }
+        });
+
+        await prisma.jobPosting.create({
+            data: {
+                title: 'Backend Engineer',
+                description: 'Backend engineer needed for scalable systems',
+                requiredSkills: {
+                    create: [
+                        { skillId: skills[2].id }, // Node.js
+                        { skillId: skills[3].id }, // Python
+                        { skillId: skills[4].id }, // SQL
+                        { skillId: skills[5].id }, // AWS
+                        { skillId: skills[6].id }, // Docker
+                    ]
+                }
+            }
+        });
+
+        await prisma.jobPosting.create({
+            data: {
+                title: 'DevOps Engineer',
+                description: 'DevOps engineer for cloud infrastructure',
+                requiredSkills: {
+                    create: [
+                        { skillId: skills[5].id }, // AWS
+                        { skillId: skills[6].id }, // Docker
+                        { skillId: skills[3].id }, // Python
+                    ]
+                }
+            }
+        });
+
+        await prisma.jobPosting.create({
+            data: {
+                title: 'Frontend Developer',
+                description: 'Frontend developer for modern web applications',
+                requiredSkills: {
+                    create: [
+                        { skillId: skills[0].id }, // JavaScript
+                        { skillId: skills[1].id }, // React
+                        { skillId: skills[7].id }, // TypeScript
+                    ]
+                }
+            }
+        });
+
+        await prisma.jobPosting.create({
+            data: {
+                title: 'Technical Project Manager',
+                description: 'Managing technical projects and teams',
+                requiredSkills: {
+                    create: [
+                        { skillId: skills[8].id }, // Communication
+                        { skillId: skills[9].id }, // Project Management
+                        { skillId: skills[0].id }, // JavaScript
+                    ]
+                }
+            }
+        });
+
+        console.log('Database seeded successfully with skills and job postings!');
+    } catch (error) {
+        console.error('Database seeding failed:', error.message);
+        console.log('Server will continue without seeding. Database operations may fail.');
+    }
 };
 
 
