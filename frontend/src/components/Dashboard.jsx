@@ -16,8 +16,8 @@ const Dashboard = ({ user, onLogout }) => {
             setLoading(true);
             try {
                 const [userRes, skillsRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/user/${user.id}`),
-                    fetch(`${API_BASE_URL}/skills`),
+                    fetch(`${VITE_API_BASE_URL}/user/${user.id}`),
+                    fetch(`${VITE_API_BASE_URL}/skills`),
                 ]);
                 const userData = await userRes.json();
                 const skillsData = await skillsRes.json();
@@ -37,14 +37,14 @@ const Dashboard = ({ user, onLogout }) => {
         if (!selectedSkill) return;
         
         try {
-            await fetch(`${API_BASE_URL}/user/${user.id}/skills`, {
+            await fetch(`${VITE_API_BASE_URL}/user/${user.id}/skills`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ skillId: selectedSkill }),
             });
             
             // Refetch user data
-            const userRes = await fetch(`${API_BASE_URL}/user/${user.id}`);
+            const userRes = await fetch(`${VITE_API_BASE_URL}/user/${user.id}`);
             const newUserData = await userRes.json();
             setUserSkills(newUserData.skills || []);
             setSelectedSkill('');
@@ -57,7 +57,7 @@ const Dashboard = ({ user, onLogout }) => {
         setIsAnalyzing(true);
         setAnalysis(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/user/${user.id}/analyze`);
+            const res = await fetch(`${VITE_API_BASE_URL}/user/${user.id}/analyze`);
             const data = await res.json();
             setAnalysis(data);
         } catch(e) {
